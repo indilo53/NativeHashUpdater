@@ -223,11 +223,12 @@ namespace NativeHashUpdater
 
         private static void GenerateTranslation()
         {
+
             using (FileStream outStream = File.Create("native_translation.dat"))
             {
                 using (DeflateStream inflate = new DeflateStream(outStream, CompressionMode.Compress))
                 {
-                    string[] files = Directory.GetFiles(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "b*-b*.txt");
+                    string[] files = Directory.GetFiles(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "b*-b*.txt").OrderBy(e => Convert.ToUInt32(string.Concat(e.Split('\\').Last().Skip(1).TakeWhile(x => x != '-')))).ToArray();
 
                     for (int i = 0; i < files.Length; i++)
                     {
@@ -237,18 +238,31 @@ namespace NativeHashUpdater
 
                             while ((line = reader.ReadLine()) != null)
                             {
-                                var split   = Regex.Split(line, @"\{(.*),(.*)\}");
+                                var split = Regex.Split(line, @"\{(.*),(.*)\}");
                                 string from = split[1].Replace(" ", "").Replace("0x", "");
-                                string to   = split[2].Replace(" ", "").Replace("0x", "");
+                                string to = split[2].Replace(" ", "").Replace("0x", "");
 
-                                if (from == to)
+                                try
+                                {
+
+                                    if (from == to || ulong.Parse(from, System.Globalization.NumberStyles.HexNumber) == 0)
+                                    {
+                                        continue;
+                                    }
+                                }
+                                catch (Exception e)
+                                {
                                     continue;
+                                }
 
-                                string l    = $"{to}:{from}\n";
+
+                                string l = $"{to}:{from}\n";
                                 byte[] data = Encoding.Default.GetBytes(l);
 
                                 inflate.Write(data, 0, data.Length);
                             }
+
+                            inflate.Flush();
                         }
                     }
                 }
