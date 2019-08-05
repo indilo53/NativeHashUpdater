@@ -121,11 +121,12 @@ namespace NativeHashUpdater
             if (!File.Exists("natives.json"))
                 Console.WriteLine("[ERROR] natives.json could not be found.");
 
-            Console.WriteLine("Writing x64natives");
+            Console.WriteLine("Writing x64natives.dat / HashMapData.h");
 
             using (StreamReader file = File.OpenText("natives.json"))
             using (JsonTextReader reader = new JsonTextReader(file))
-            using (StreamWriter writer = new StreamWriter("x64natives.dat"))
+            using (StreamWriter writer1 = new StreamWriter("x64natives.dat"))
+            using (StreamWriter writer2 = new StreamWriter("HashMapData.h"))
             {
                 JObject JSONNAtives = (JObject)JToken.ReadFrom(reader);
 
@@ -151,12 +152,38 @@ namespace NativeHashUpdater
                             def = hash + ":" + ns + ":" + name;
                         }
 
-                        writer.Write(def + "\n");
+                        writer1.Write(def + "\n");
+
+                    }
+                }
+
+                foreach (var elem in JSONNAtives)
+                {
+                    var ns = elem.Key;
+                    var natives = (JObject)elem.Value;
+
+                    foreach (var infos in natives)
+                    {
+                        var hash = infos.Key;
+                        var data = (JObject)infos.Value;
+                        var name = (string)data["name"];
+
+                        string def;
+
+                        if (name == "")
+                        {
+                            def = hash + ":" + ns + ":_" + hash;
+                        }
+                        else
+                        {
+                            def = hash + ":" + ns + ":" + name;
+                        }
+
+                        writer2.Write(def + "\n");
 
                     }
                 }
             }
-
 
             if (!File.Exists("natives.h"))
                 Console.WriteLine("[ERROR] natives.h header could not be found.");
